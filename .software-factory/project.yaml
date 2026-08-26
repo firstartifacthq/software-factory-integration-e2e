@@ -1,0 +1,37 @@
+schemaVersion: software-factory.project/v4
+development:
+  prepare:
+    - node
+    - --version
+  initialize:
+    - node
+    - -e
+    - "import('./src/catalog.js').then(() => console.log('No local data initialization required.'))"
+  start:
+    - node
+    - --watch
+    - --test
+  health:
+    - node
+    - -e
+    - "import('./src/catalog.js').then(({ lookup }) => { if (lookup('alpha') !== 'baseline-alpha') process.exit(1) })"
+inputs: []
+automations:
+  - schemaVersion: software-factory.automation/v1
+    id: semgrep
+    schedule: '0 3 * * 1'
+    daggerFunction: semgrep
+    issueTitle: Fix Semgrep findings
+    task: Repair findings or evolve this repository's local Semgrep rules.
+  - schemaVersion: software-factory.automation/v1
+    id: alint
+    schedule: '0 3 * * 2'
+    daggerFunction: alint
+    issueTitle: Fix Alint findings
+    task: Repair repository structure or evolve this repository's Alint policy.
+  - schemaVersion: software-factory.automation/v1
+    id: ls-lint
+    schedule: '0 3 * * 3'
+    daggerFunction: ls-lint
+    issueTitle: Fix repository naming findings
+    task: Repair names or evolve this repository's ls-lint conventions.

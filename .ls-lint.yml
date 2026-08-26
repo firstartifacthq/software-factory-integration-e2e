@@ -1,0 +1,16 @@
+ls:
+  .dagger:
+    .dir: regex:(\.dagger|[a-z0-9][a-z0-9-]*)
+    .json: kebab-case
+    .ts: kebab-case
+    .yml: kebab-case
+    .yaml: kebab-case
+  src:
+    .dir: kebab-case
+    .js: kebab-case
+  test:
+    .js: regex:([a-z0-9]+\.)*test
+ignore:
+  - .git
+  - node_modules
+  - dist
