@@ -10,3 +10,9 @@ export function lookupCatalog(name) {
 }
 
 export const lookup = lookupCatalog;
+
+export function listCatalogKeys(catalog, prefix) {
+  return Object.keys(catalog)
+    .filter((key) => key.startsWith(prefix))
+    .sort();
+}
