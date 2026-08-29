@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { catalog, listCatalogKeys, lookupCatalog } from "../src/catalog.js";
+import {
+  catalog,
+  hasCatalogKey,
+  listCatalogKeys,
+  lookupCatalog,
+} from "../src/catalog.js";
 
 test("looks up known catalog entries", () => {
   assert.equal(lookupCatalog("alpha"), "baseline-alpha");
@@ -13,6 +18,54 @@ test("looks up known catalog entries", () => {
 test("returns null for an unknown entry", () => {
   assert.equal(lookupCatalog("missing"), null);
   assert.deepEqual(Object.keys(catalog), ["alpha", "beta", "gamma", "delta"]);
+});
+
+test("checks only own enumerable string and symbol keys", () => {
+  const inherited = { inherited: true };
+  const entries = Object.create(inherited);
+  const symbol = Symbol("visible");
+  entries.visible = true;
+  entries[symbol] = true;
+  Object.defineProperty(entries, "hidden", { value: true, enumerable: false });
+
+  assert.equal(hasCatalogKey(entries, "visible"), true);
+  assert.equal(hasCatalogKey(entries, symbol), true);
+  assert.equal(hasCatalogKey(entries, "inherited"), false);
+  assert.equal(hasCatalogKey(entries, "hidden"), false);
+  assert.equal(hasCatalogKey(entries, "missing"), false);
+});
+
+test("does not mutate the catalog while checking a key", () => {
+  const reference = { nested: true };
+  const prototype = { inherited: reference };
+  const entries = Object.create(prototype);
+  const symbol = Symbol("key");
+  Object.defineProperty(entries, "visible", {
+    value: reference,
+    enumerable: true,
+    writable: false,
+    configurable: false,
+  });
+  Object.defineProperty(entries, "hidden", {
+    value: reference,
+    enumerable: false,
+    writable: false,
+    configurable: false,
+  });
+  Object.defineProperty(entries, symbol, { value: reference, enumerable: true });
+  const beforePrototype = Object.getPrototypeOf(entries);
+  const beforeKeys = Reflect.ownKeys(entries);
+  const beforeDescriptors = Object.getOwnPropertyDescriptors(entries);
+  const beforeValues = beforeKeys.map((key) => entries[key]);
+
+  assert.equal(hasCatalogKey(entries, "visible"), true);
+  assert.equal(hasCatalogKey(entries, "missing"), false);
+  assert.equal(hasCatalogKey(entries, "inherited"), false);
+
+  assert.equal(Object.getPrototypeOf(entries), beforePrototype);
+  assert.deepEqual(Reflect.ownKeys(entries), beforeKeys);
+  assert.deepEqual(Object.getOwnPropertyDescriptors(entries), beforeDescriptors);
+  assert.deepEqual(beforeKeys.map((key) => entries[key]), beforeValues);
 });
 
 test("lists matching own enumerable keys in UTF-16 lexicographic order", () => {
