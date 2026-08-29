@@ -20,3 +20,7 @@ export function listCatalogKeys(catalog, prefix) {
     .filter((key) => key.startsWith(prefix))
     .sort();
 }
+
+export function listCatalogValues(catalog, prefix = "") {
+  return listCatalogKeys(catalog, prefix).map((key) => catalog[key]);
+}
