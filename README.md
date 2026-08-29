@@ -12,9 +12,18 @@ property of `catalog`; inherited, non-enumerable, and absent properties return
 
 ### `listCatalogValues(catalog, prefix = "")`
 
-This exported function performs prefix matching on the catalog's own enumerable
-string keys. It returns a new array containing the values for exactly the
-matching keys, with keys sorted in ascending lexicographic JavaScript string
-order before values are collected. If `prefix` is omitted, it defaults to `""`
-and selects every eligible key. Inherited, non-enumerable, and symbol-keyed
-properties are not eligible. The supplied catalog is never modified.
+`listCatalogValues(catalog, prefix = "")` is an exported function with this
+contract:
+
+- It selects keys whose text begins with the supplied `prefix` (prefix
+  matching).
+- Eligible keys are the catalog's own enumerable string keys only. Inherited,
+  non-enumerable, and symbol keys are excluded.
+- Matching keys are ordered by ascending lexicographic comparison of JavaScript
+  string UTF-16 code units.
+- An omitted `prefix` defaults to the empty string (`""`), so every eligible
+  own enumerable string key matches; an explicitly empty prefix has the same
+  behavior.
+- It returns a new array containing the selected values and does not mutate the
+  supplied catalog: its prototype, keys, descriptors, and referenced values are
+  preserved.
