@@ -6,6 +6,7 @@ import {
   hasCatalogKey,
   listCatalogEntries,
   listCatalogKeys,
+  listCatalogKeysByValue,
   listCatalogValues,
   lookupCatalog,
 } from "../src/catalog.js";
@@ -181,6 +182,55 @@ test("does not mutate the catalog while listing values", () => {
   const beforeValues = beforeKeys.map((key) => entries[key]);
 
   assert.deepEqual(listCatalogValues(entries, "pre"), [reference]);
+  assert.equal(Object.getPrototypeOf(entries), beforePrototype);
+  assert.deepEqual(Reflect.ownKeys(entries), beforeKeys);
+  assert.deepEqual(Object.getOwnPropertyDescriptors(entries), beforeDescriptors);
+  assert.deepEqual(beforeKeys.map((key) => entries[key]), beforeValues);
+});
+
+test("lists catalog keys by exact value with eligible keys, ordering, and fresh results", () => {
+  const inherited = { inherited: "shared" };
+  const entries = Object.create(inherited);
+  const shared = { nested: true };
+  const distinct = { nested: true };
+  Object.defineProperties(entries, {
+    zeta: { value: shared, enumerable: true },
+    alpha: { value: shared, enumerable: true },
+    nan: { value: Number.NaN, enumerable: true },
+    plusZero: { value: +0, enumerable: true },
+    minusZero: { value: -0, enumerable: true },
+    hidden: { value: shared, enumerable: false },
+    distinct: { value: distinct, enumerable: true },
+  });
+  const symbol = Symbol("shared");
+  entries[symbol] = shared;
+
+  assert.equal(typeof listCatalogKeysByValue, "function");
+  assert.deepEqual(listCatalogKeysByValue(entries, shared), ["alpha", "zeta"]);
+  assert.deepEqual(listCatalogKeysByValue(entries, Number.NaN), ["nan"]);
+  assert.deepEqual(listCatalogKeysByValue(entries, +0), ["plusZero"]);
+  assert.deepEqual(listCatalogKeysByValue(entries, -0), ["minusZero"]);
+  assert.deepEqual(listCatalogKeysByValue(entries, { nested: true }), []);
+  const result = listCatalogKeysByValue(entries, shared);
+  const again = listCatalogKeysByValue(entries, shared);
+  assert.ok(Array.isArray(result));
+  assert.notEqual(result, again);
+});
+
+test("preserves catalog integrity while listing keys by value", () => {
+  const reference = { nested: true };
+  const prototype = { inherited: reference };
+  const entries = Object.create(prototype);
+  const symbol = Symbol("key");
+  Object.defineProperty(entries, "visible", { value: reference, enumerable: true, writable: false, configurable: false });
+  Object.defineProperty(entries, "hidden", { value: reference, enumerable: false, writable: false, configurable: false });
+  Object.defineProperty(entries, symbol, { value: reference, enumerable: true });
+  const beforePrototype = Object.getPrototypeOf(entries);
+  const beforeKeys = Reflect.ownKeys(entries);
+  const beforeDescriptors = Object.getOwnPropertyDescriptors(entries);
+  const beforeValues = beforeKeys.map((key) => entries[key]);
+
+  assert.deepEqual(listCatalogKeysByValue(entries, reference), ["visible"]);
   assert.equal(Object.getPrototypeOf(entries), beforePrototype);
   assert.deepEqual(Reflect.ownKeys(entries), beforeKeys);
   assert.deepEqual(Object.getOwnPropertyDescriptors(entries), beforeDescriptors);
