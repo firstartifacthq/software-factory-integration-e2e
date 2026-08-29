@@ -10,6 +10,15 @@ returns `true` only when `key` (a string or symbol) identifies an own enumerable
 property of `catalog`; inherited, non-enumerable, and absent properties return
 `false`. The check does not modify the supplied catalog.
 
+### `listCatalogEntries(catalog, prefix = "")`
+
+`listCatalogEntries(catalog, prefix = "")` returns fresh `[key, value]` pairs for
+matching own enumerable string keys. Matching is case-sensitive and starts at
+the beginning of each key; an omitted or empty prefix selects every eligible
+key. Pairs are ordered by ascending JavaScript UTF-16 lexicographic order, and
+values retain their original references. The supplied catalog is not mutated
+(its prototype, keys, descriptors, and referenced values are preserved).
+
 ### `listCatalogValues(catalog, prefix = "")`
 
 `listCatalogValues(catalog, prefix = "")` is an exported function with this

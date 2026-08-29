@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   catalog,
   hasCatalogKey,
+  listCatalogEntries,
   listCatalogKeys,
   listCatalogValues,
   lookupCatalog,
@@ -87,6 +88,51 @@ test("lists matching own enumerable keys in UTF-16 lexicographic order", () => {
   assert.deepEqual(listCatalogKeys(entries, "pre"), ["pre10", "pre2", "preLower"]);
   assert.deepEqual(listCatalogKeys(entries, ""), ["PreUpper", "other", "pre10", "pre2", "preLower"]);
   assert.deepEqual(listCatalogKeys(entries, "missing"), []);
+});
+
+test("lists matching catalog entries in key order with fresh pairs", () => {
+  const inherited = { preInherited: "inherited" };
+  const entries = Object.create(inherited);
+  const repeated = { shared: true };
+  Object.defineProperties(entries, {
+    pre10: { value: "ten", enumerable: true },
+    pre2: { value: repeated, enumerable: true },
+    PreUpper: { value: "upper", enumerable: true },
+    preLower: { value: repeated, enumerable: true },
+    other: { value: "other", enumerable: true },
+    preHidden: { value: "hidden", enumerable: false },
+  });
+  const symbol = Symbol("pre-symbol");
+  entries[symbol] = "symbol";
+
+  const result = listCatalogEntries(entries, "pre");
+  assert.deepEqual(result, [["pre10", "ten"], ["pre2", repeated], ["preLower", repeated]]);
+  assert.ok(result.every((pair) => Array.isArray(pair) && pair.length === 2));
+  assert.equal(result[1][1], repeated);
+  assert.deepEqual(listCatalogEntries(entries), [["PreUpper", "upper"], ["other", "other"], ["pre10", "ten"], ["pre2", repeated], ["preLower", repeated]]);
+  assert.deepEqual(listCatalogEntries(entries, "missing"), []);
+  const again = listCatalogEntries(entries, "pre");
+  assert.notEqual(result, again);
+  result.forEach((pair, index) => assert.notEqual(pair, again[index]));
+});
+
+test("does not mutate the catalog while listing entries", () => {
+  const reference = { nested: true };
+  const prototype = { inherited: reference };
+  const entries = Object.create(prototype);
+  const symbol = Symbol("key");
+  Object.defineProperty(entries, "preHidden", { value: reference, enumerable: false, writable: false, configurable: false });
+  Object.defineProperty(entries, "preVisible", { value: reference, enumerable: true, writable: false, configurable: false });
+  Object.defineProperty(entries, symbol, { value: reference, enumerable: true });
+  const beforePrototype = Object.getPrototypeOf(entries);
+  const beforeKeys = Reflect.ownKeys(entries);
+  const beforeDescriptors = Object.getOwnPropertyDescriptors(entries);
+  const beforeValues = beforeKeys.map((key) => entries[key]);
+  assert.deepEqual(listCatalogEntries(entries), [["preVisible", reference]]);
+  assert.equal(Object.getPrototypeOf(entries), beforePrototype);
+  assert.deepEqual(Reflect.ownKeys(entries), beforeKeys);
+  assert.deepEqual(Object.getOwnPropertyDescriptors(entries), beforeDescriptors);
+  assert.deepEqual(beforeKeys.map((key) => entries[key]), beforeValues);
 });
 
 test("lists matching catalog values in key order", () => {
