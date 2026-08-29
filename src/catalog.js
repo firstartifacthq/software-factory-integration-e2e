@@ -11,6 +11,10 @@ export function lookupCatalog(name) {
 
 export const lookup = lookupCatalog;
 
+export function hasCatalogKey(catalog, key) {
+  return Object.prototype.propertyIsEnumerable.call(catalog, key);
+}
+
 export function listCatalogKeys(catalog, prefix) {
   return Object.keys(catalog)
     .filter((key) => key.startsWith(prefix))
