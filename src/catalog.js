@@ -21,6 +21,12 @@ export function listCatalogKeys(catalog, prefix) {
     .sort();
 }
 
+export function listCatalogKeysByValue(catalog, value) {
+  return Object.keys(catalog)
+    .filter((key) => Object.is(catalog[key], value))
+    .sort();
+}
+
 export function listCatalogEntries(catalog, prefix = "") {
   return listCatalogKeys(catalog, prefix).map((key) => [key, catalog[key]]);
 }
