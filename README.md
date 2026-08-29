@@ -10,10 +10,11 @@ returns `true` only when `key` (a string or symbol) identifies an own enumerable
 property of `catalog`; inherited, non-enumerable, and absent properties return
 `false`. The check does not modify the supplied catalog.
 
-`listCatalogValues(catalog, prefix = "")` is an exported function that returns
-a new array containing values for own enumerable string keys whose text begins
-with `prefix`. Matching keys are ordered lexicographically (ascending JavaScript
-string order) before their values are returned. Omitting `prefix` defaults to an
-empty prefix and therefore selects every eligible key. Inherited,
-non-enumerable, and symbol-keyed properties are excluded, and the supplied
-catalog is never modified.
+### `listCatalogValues(catalog, prefix = "")`
+
+This exported function performs prefix matching on the catalog's own enumerable
+string keys. It returns a new array containing the values for exactly the
+matching keys, with keys sorted in ascending lexicographic JavaScript string
+order before values are collected. If `prefix` is omitted, it defaults to `""`
+and selects every eligible key. Inherited, non-enumerable, and symbol-keyed
+properties are not eligible. The supplied catalog is never modified.
