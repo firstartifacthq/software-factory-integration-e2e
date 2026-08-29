@@ -7,6 +7,7 @@ import {
   listCatalogEntries,
   listCatalogKeys,
   listCatalogKeysByValue,
+  listCatalogKeysBySuffix,
   listCatalogValues,
   lookupCatalog,
 } from "../src/catalog.js";
@@ -215,6 +216,73 @@ test("lists catalog keys by exact value with eligible keys, ordering, and fresh 
   const again = listCatalogKeysByValue(entries, shared);
   assert.ok(Array.isArray(result));
   assert.notEqual(result, again);
+});
+
+test("lists matching own enumerable keys by suffix in UTF-16 order", () => {
+  const inherited = { inheritedSuffix: true };
+  const entries = Object.create(inherited);
+  const symbol = Symbol("suffix");
+  Object.defineProperties(entries, {
+    "z-last": { value: true, enumerable: true },
+    "a-last": { value: true, enumerable: true },
+    "A-last": { value: true, enumerable: true },
+    "emoji-\ud83d\ude00-last": { value: true, enumerable: true },
+    "emoji-\ud83d\udca5-last": { value: true, enumerable: true },
+    hidden: { value: true, enumerable: false },
+  });
+  entries[symbol] = true;
+
+  assert.deepEqual(listCatalogKeysBySuffix(entries, "-last"), [
+    "A-last",
+    "a-last",
+    "emoji-\ud83d\udca5-last",
+    "emoji-\ud83d\ude00-last",
+    "z-last",
+  ]);
+  assert.deepEqual(listCatalogKeysBySuffix(entries, ""), [
+    "A-last",
+    "a-last",
+    "emoji-\ud83d\udca5-last",
+    "emoji-\ud83d\ude00-last",
+    "z-last",
+  ]);
+  assert.deepEqual(listCatalogKeysBySuffix(entries, "missing"), []);
+  assert.deepEqual(listCatalogKeysBySuffix(entries, "Suffix"), []);
+  assert.equal(typeof listCatalogKeysBySuffix, "function");
+});
+
+test("returns fresh suffix results without mutating the source catalog", () => {
+  const reference = { nested: true };
+  const prototype = { inheritedSuffix: reference };
+  const entries = Object.create(prototype);
+  const symbol = Symbol("suffix");
+  Object.defineProperty(entries, "visible-suffix", {
+    value: reference,
+    enumerable: true,
+    writable: false,
+    configurable: false,
+  });
+  Object.defineProperty(entries, "hidden-suffix", {
+    value: reference,
+    enumerable: false,
+    writable: false,
+    configurable: false,
+  });
+  Object.defineProperty(entries, symbol, { value: reference, enumerable: true });
+  const beforePrototype = Object.getPrototypeOf(entries);
+  const beforeKeys = Reflect.ownKeys(entries);
+  const beforeDescriptors = Object.getOwnPropertyDescriptors(entries);
+  const beforeValues = beforeKeys.map((key) => entries[key]);
+
+  const result = listCatalogKeysBySuffix(entries, "-suffix");
+  const again = listCatalogKeysBySuffix(entries, "-suffix");
+
+  assert.deepEqual(result, ["visible-suffix"]);
+  assert.notEqual(result, again);
+  assert.equal(Object.getPrototypeOf(entries), beforePrototype);
+  assert.deepEqual(Reflect.ownKeys(entries), beforeKeys);
+  assert.deepEqual(Object.getOwnPropertyDescriptors(entries), beforeDescriptors);
+  assert.deepEqual(beforeKeys.map((key) => entries[key]), beforeValues);
 });
 
 test("preserves catalog integrity while listing keys by value", () => {
